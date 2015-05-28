@@ -66,34 +66,34 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 	}
 
 	private function icepay() {
-		if (!isset($this->_icepay))
-			$this->_icepay = new Icepay_Project_Helper();
+		if (!isset($this->vm_icepay))
+			$this->vm_icepay = new Icepay_Project_Helper();
 
-		return $this->_icepay;
+		return $this->vm_icepay;
 	}
 
-    private function _getLangISO() {
+	private function _getLangISO() {
 		$lang = &JFactory::getLanguage();
-		$arr = explode("-",$lang->get('tag'));
+		$arr = explode("-", $lang->get('tag'));
 
 		return strtoupper($arr[0]);
-    }
+	}
 
 	function getTableSQLFields() {
 		$SQLfields = array(
-			'id'							=> 'tinyint(1) unsigned NOT NULL AUTO_INCREMENT',
-			'virtuemart_order_id'			=> 'int(11) UNSIGNED DEFAULT NULL',
-			'order_number'					=> 'char(32) DEFAULT NULL',
-			'virtuemart_paymentmethod_id'	=> 'mediumint(1) UNSIGNED DEFAULT NULL',
-			'payment_name'					=> 'char(255) NOT NULL DEFAULT \'\' ',
-			'payment_order_total'			=> 'decimal(15,5) NOT NULL DEFAULT \'0.00000\' ',
-			'payment_currency'				=> 'char(3) ',
-			'cost_per_transaction'			=> ' decimal(10,2) DEFAULT NULL ',
-			'cost_percent_total'			=> ' decimal(10,2) DEFAULT NULL ',
-			'tax_id'						=> 'smallint(11) DEFAULT NULL',
-			'icepay_order_id'				=> 'int(11) UNSIGNED DEFAULT NULL',
-			'icepay_transaction_id'			=> 'char(32) DEFAULT NULL',
-			'icepay_status'					=> 'char(32) DEFAULT \'NEW\''
+			'id'                          => 'tinyint(1) unsigned NOT NULL AUTO_INCREMENT',
+			'virtuemart_order_id'         => 'int(11) UNSIGNED DEFAULT NULL',
+			'order_number'                => 'char(32) DEFAULT NULL',
+			'virtuemart_paymentmethod_id' => 'mediumint(1) UNSIGNED DEFAULT NULL',
+			'payment_name'                => 'char(255) NOT NULL DEFAULT \'\' ',
+			'payment_order_total'         => 'decimal(15,5) NOT NULL DEFAULT \'0.00000\' ',
+			'payment_currency'            => 'char(3) ',
+			'cost_per_transaction'        => ' decimal(10,2) DEFAULT NULL ',
+			'cost_percent_total'          => ' decimal(10,2) DEFAULT NULL ',
+			'tax_id'                      => 'smallint(11) DEFAULT NULL',
+			'icepay_order_id'             => 'int(11) UNSIGNED DEFAULT NULL',
+			'icepay_transaction_id'       => 'char(32) DEFAULT NULL',
+			'icepay_status'               => 'char(32) DEFAULT \'NEW\''
 		);
 
 		foreach($this->icepay()->postback()->getPostbackResponseFields() as $param => $postback) {
@@ -113,7 +113,60 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 			vmInfo(JText::_('Your Secretcode is missing in the configuration.'));
 		}
 
-		// Checkout
+		if (!($method = $this->getVmPluginMethod($order['details']['BT']->virtuemart_paymentmethod_id))) {
+			return null;
+		}
+
+		if (!$this->selectedThisElement($method->payment_element)) {
+			return false;
+		}
+
+		if (!class_exists('VirtueMartModelOrders'))
+			require( JPATH_VM_ADMINISTRATOR . DS . 'models' . DS . 'orders.php' );
+
+		if (!class_exists('VirtueMartModelCurrency'))
+			require(JPATH_VM_ADMINISTRATOR . DS . 'models' . DS . 'currency.php');
+
+		$new_status = '';
+		$usrBT = $order['details']['BT'];
+		$usrST = isset($order['details']['ST']) ? $order['details']['ST'] : $order['details']['BT'];
+
+		$this->getPaymentCurrency($method);
+		$q = 'SELECT `currency_code_3` FROM `#__virtuemart_currencies` WHERE `virtuemart_currency_id`="' . $method->payment_currency . '" ';
+		$db = &JFactory::getDBO();
+		$db->setQuery($q);
+		$currency_code_3 = $db->loadResult();
+		$paymentCurrency = CurrencyDisplay::getInstance($method->payment_currency);
+		$totalInPaymentCurrency = round($paymentCurrency->convertCurrencyTo($method->payment_currency, $order['details']['BT']->order_total, false), 2);
+
+		$amount = round($order['details']['BT']->order_total, 2);
+
+		$icepay = $this->vm_icepay->basic();
+
+		try {
+			$icepay->setMerchantID($method->merchantid)->setSecretCode($method->secretcode);
+
+			$icepay
+				->setAmount($amount)
+				->setCountry(ShopFunctions::getCountryByID($order['details']['BT']->virtuemart_country_id, 'country_2_code'))
+				->setLanguage($this->_getLangISO())
+				->setCurrency($currency_code_3)
+				->setReference($order['details']['BT']->order_number)
+				->setDescription($order['details']['BT']->order_number);
+
+			$url = $icepay
+				->setOrderID($cart->virtuemart_order_id)
+				->getURL();
+		} catch (Exception $e) {
+			die($e->getMessage());
+		}
+
+		$html  = '<form action="' . $url . '" method="post" name="icepay"></form>';
+		$html .= '<script type="text/javascript">';
+		$html .= 'document.icepay.submit();';
+		$html .= '</script>';
+
+		// Database data here and return missing
 	}
 
 	function plgVmOnPaymentNotification() {
