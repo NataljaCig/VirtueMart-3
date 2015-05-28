@@ -17,6 +17,7 @@
 
 	<files>
 		<!-- All other files will be handled by VirtueMart 3 -->
+		<folder>icepay_api</folder>
 		<filename plugin="icepay">icepay.php</filename>
 	</files>
 
