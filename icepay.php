@@ -127,7 +127,6 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 		if (!class_exists('VirtueMartModelCurrency'))
 			require(JPATH_VM_ADMINISTRATOR . DS . 'models' . DS . 'currency.php');
 
-		$new_status = '';
 		$usrBT = $order['details']['BT'];
 		$usrST = isset($order['details']['ST']) ? $order['details']['ST'] : $order['details']['BT'];
 
@@ -166,7 +165,18 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 		$html .= 'document.icepay.submit();';
 		$html .= '</script>';
 
-		// Database data here and return missing
+		$dbValues['order_number'] = $order['details']['BT']->order_number;
+		$dbValues['payment_name'] = $this->renderPluginName($method, $order);
+		$dbValues['virtuemart_paymentmethod_id'] = $order['details']['BT']->virtuemart_paymentmethod_id;
+		$dbValues['cost_per_transaction'] = $method->cost_per_transaction;
+		$dbValues['cost_percent_total'] = $method->cost_percent_total;
+		$dbValues['payment_currency'] = $method->payment_currency;
+		$dbValues['payment_order_total'] = $totalInPaymentCurrency;
+		$dbValues['tax_id'] = $method->tax_id;
+
+		$this->storePSPluginInternalData($dbValues);
+
+		return $this->processConfirmedOrderPaymentResponse(2, $cart, $order, $html, $dbValues['payment_name'], $method->status_pending);
 	}
 
 	function plgVmOnPaymentNotification() {
