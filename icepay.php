@@ -25,7 +25,7 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 	function __construct(& $subject, $config) {
 		parent::__construct($subject, $config);
 
-		$this->_icepay = new Icepay_Project_Helper();
+		$this->vm_icepay = new Icepay_Project_Helper();
 		$this->_loggable = true;
 		$this->_tablepkey = 'id';
 		$this->_tableId = 'id';
@@ -33,14 +33,16 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 
 		$varsToPush = array(
 			// Do not change any of these array items. If you do, I'll use the Avada Kedavra spell on you.
-			'icepaybasic_merchantid'    => array('', 'char'),
-			'icepaybasic_secretcode'    => array('', 'char'),
-			'icepaybasic_paymentmethod' => array('', 'char'),
+
+			'merchantid'                => array('', 'char'),   // icepay.xml (merchantid)
+			'secretcode'                => array('', 'char'),   // icepay.xml (secretcode)
+
 			'status_pending'            => array('', 'char'),
 			'status_success'            => array('', 'char'),
 			'status_canceled'           => array('', 'char'),
 			'status_refund'             => array('', 'char'),
 			'status_chargeback'         => array('', 'char'),
+
 			'payment_logos'             => array('', 'char'),
 			'payment_currency'          => array(0, 'int'),
 			'countries'                 => array(0, 'char'),
@@ -52,13 +54,6 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 		);
 
 		$this->setConfigParameterable($this->_configTableFieldName, $varsToPush);
-
-		$notify_url	= isset($_GET['notify']) ? 1 : 0;
-		$error_url	= isset($_GET['error'])  ? 1 : 0;
-
-		if ( $notify_url || $error_url ) {
-			$this->plgVmOnPaymentNotification();
-		}
 	}
 
 	public function getVmPluginCreateTableSQL() {
@@ -138,12 +133,15 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 		$paymentCurrency = CurrencyDisplay::getInstance($method->payment_currency);
 		$totalInPaymentCurrency = round($paymentCurrency->convertCurrencyTo($method->payment_currency, $order['details']['BT']->order_total, false), 2);
 
-		$amount = round($order['details']['BT']->order_total, 2);
+		$amount = $totalInPaymentCurrency * 100;
+		$returnURL = JROUTE::_(JURI::root() . 'index.php?option=com_virtuemart&view=icepayresponse&task=result&pm=' . $order['details']['BT']->virtuemart_paymentmethod_id);
 
 		$icepay = $this->vm_icepay->basic();
 
 		try {
-			$icepay->setMerchantID($method->merchantid)->setSecretCode($method->secretcode);
+			$icepay
+				->setMerchantID($method->merchantid)
+				->setSecretCode($method->secretcode);
 
 			$icepay
 				->setAmount($amount)
@@ -151,7 +149,9 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 				->setLanguage($this->_getLangISO())
 				->setCurrency($currency_code_3)
 				->setReference($order['details']['BT']->order_number)
-				->setDescription($order['details']['BT']->order_number);
+				->setDescription($order['details']['BT']->order_number)
+				->setSuccessURL($returnURL)
+                ->setErrorURL($returnURL);
 
 			$url = $icepay
 				->setOrderID($cart->virtuemart_order_id)
@@ -179,16 +179,55 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 		return $this->processConfirmedOrderPaymentResponse(2, $cart, $order, $html, $dbValues['payment_name'], $method->status_pending);
 	}
 
-	function plgVmOnPaymentNotification() {
-		//
-	}
-
 	function plgVmgetPaymentCurrency($virtuemart_paymentmethod_id, &$paymentCurrencyId) {
-		//
+		if (!($method = $this->getVmPluginMethod($virtuemart_paymentmethod_id))) {
+			return null;
+		}
+
+		if (!$this->selectedThisElement($method->payment_element)) {
+			return false;
+		}
+
+		$this->getPaymentCurrency($method);
+		$paymentCurrencyId = $method->payment_currency;
 	}
 
 	function plgVmOnPaymentResponseReceived(&$html) {
-		//
+		$jinput = JFactory::getApplication()->input;
+		$virtuemart_paymentmethod_id = $jinput->get('pm');
+
+		if (!($method = $this->getVmPluginMethod($virtuemart_paymentmethod_id))) {
+			return null;
+		}
+
+		if (!$this->selectedThisElement($method->payment_element)) {
+			return false;
+		}
+
+		$icepay = $_SERVER['REQUEST_METHOD'] == 'POST' ? $this->vm_icepay->postback() : $this->vm_icepay->result();
+
+		try {
+            $icepay
+                ->setMerchantID($method->merchantid)
+                ->setSecretCode($method->secretcode);
+        } catch (Exception $e){
+            echo($e->getMessage());
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] != 'POST') {
+        	if($icepay->validate()) {
+        		switch ($icepay->getStatus()) {
+        			case Icepay_StatusCode::OPEN:
+        				break;
+        			case Icepay_StatusCode::SUCCESS:
+        				break;
+        			case Icepay_StatusCode::ERROR:
+        				break;
+        		}
+        	}
+        } else {
+
+        }
 	}
 
 	function plgVmOnUserPaymentCancel() {

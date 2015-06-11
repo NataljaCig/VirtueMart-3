@@ -27,9 +27,6 @@
 				<field type="vmtitle" description="" default="ICEPAY Configuration" />
 				<field type="text" name="merchantid" description="Your ICEPAY Merchant ID" default="" label="ICEPAY Merchant ID" size="50" />
 				<field type="text" name="secretcode" description="Your ICEPAY Secretcode" default="" label="ICEPAY Secretcode" size="50" />
-				<field type="vmtitle" description="" default="Postback URLs" />
-				<field type="text" name="notify_url" default="" label="Postback URL" description="This is the page to which payment information will be sent." size="50" />
-				<field type="text" name="error_url" default="" label="Error page" description="This is the page shown to the final user after a failed payment." size="50" />
 			</fieldset>
 		</fields>
 	</vmconfig>
