@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <extension method="upgrade" group="vmpayment" type="plugin" version="2.5">
 	<name>ICEPAY Payment Module</name>
-	<creationDate>May 2015</creationDate>
+	<creationDate>July 2015</creationDate>
 	<author>ICEPAY B.V.</author>
 	<authorUrl>http://www.icepay.com</authorUrl>
 	<copyright>(c) 2015 ICEPAY. All rights reserved.</copyright>
@@ -27,6 +27,13 @@
 				<field type="vmtitle" description="" default="ICEPAY Configuration" />
 				<field type="text" name="merchantid" description="Your ICEPAY Merchant ID" default="" label="ICEPAY Merchant ID" size="50" />
 				<field type="text" name="secretcode" description="Your ICEPAY Secretcode" default="" label="ICEPAY Secretcode" size="50" />
+				<field type="note" name="postback_url" label="Postback URL" description="Read the payment module manual for the correct Postback URL." size="50" />
+				<field type="vmtitle" description="" default="Payment status" />
+                <field name="status_pending" type="vmorderstate" scope="com_virtuemart" default="P" label="Pending" />
+                <field name="status_success" type="vmorderstate" scope="com_virtuemart" default="C" label="Success" />
+                <field name="status_canceled" type="vmorderstate" scope="com_virtuemart" default="X" label="Cancel" />
+                <field name="status_refunded" type="vmorderstate" scope="com_virtuemart" default="R" label="Refund" />
+                <field name="status_chargeback" type="vmorderstate" scope="com_virtuemart" default="R" label="Chargeback" />
 			</fieldset>
 		</fields>
 	</vmconfig>

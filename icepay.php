@@ -4,7 +4,7 @@
  * @package       ICEPAY Payment Module for VirtueMart 3
  * @author        Ricardo Jacobs <ricardo.jacobs@icepay.com>
  * @copyright     (c) 2015 ICEPAY. All rights reserved.
- * @version       1.0.0, May 2015
+ * @version       1.0.0, July 2015
  * @license       GNU/GPL, see http://www.gnu.org/licenses/gpl-3.0.html
  */
 
@@ -17,15 +17,14 @@ require_once(dirname(__FILE__) . '/icepay_api/icepay_api_basic.php');
 
 class plgVmPaymentIcepay extends vmPSPlugin {
 
-	private $vm_icepay;
-
-	public $vm_vendor = 'ICEPAY';
-	public $vm_version = '1.0.0';
+	private $_icepay;
+	private $_vendor = 'ICEPAY';
 
 	function __construct(& $subject, $config) {
 		parent::__construct($subject, $config);
 
-		$this->vm_icepay = new Icepay_Project_Helper();
+		$this->_icepay = new Icepay_Project_Helper();
+		
 		$this->_loggable = true;
 		$this->_tablepkey = 'id';
 		$this->_tableId = 'id';
@@ -56,15 +55,15 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 		$this->setConfigParameterable($this->_configTableFieldName, $varsToPush);
 	}
 
+    private function icepay() {
+        if (!isset($this->_icepay))
+        	$this->_icepay = new Icepay_Project_Helper();
+
+        return $this->_icepay;
+    }
+
 	public function getVmPluginCreateTableSQL() {
-		return $this->createTableSQL('Payment ' . $vm_vendor . ' Table');
-	}
-
-	private function icepay() {
-		if (!isset($this->vm_icepay))
-			$this->vm_icepay = new Icepay_Project_Helper();
-
-		return $this->vm_icepay;
+		return $this->createTableSQL('Payment ' . $_vendor . ' Table');
 	}
 
 	private function _getLangISO() {
@@ -90,7 +89,7 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 			'icepay_transaction_id'       => 'char(32) DEFAULT NULL',
 			'icepay_status'               => 'char(32) DEFAULT \'NEW\''
 		);
-
+		
 		foreach($this->icepay()->postback()->getPostbackResponseFields() as $param => $postback) {
 			$field = strtolower($param);
 			$SQLfields["icepay_response_{$field}"] = 'varchar(120) DEFAULT NULL';
@@ -100,14 +99,6 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 	}
 
 	function plgVmConfirmedOrder($cart, $order) {
-		if (empty($method->merchantid)) {
-			vmInfo(JText::_('Your Merchant ID is missing in the configuration.'));
-		}
-
-		if (empty($method->secretcode)) {
-			vmInfo(JText::_('Your Secretcode is missing in the configuration.'));
-		}
-
 		if (!($method = $this->getVmPluginMethod($order['details']['BT']->virtuemart_paymentmethod_id))) {
 			return null;
 		}
@@ -126,44 +117,33 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 		$usrST = isset($order['details']['ST']) ? $order['details']['ST'] : $order['details']['BT'];
 
 		$this->getPaymentCurrency($method);
+		
 		$q = 'SELECT `currency_code_3` FROM `#__virtuemart_currencies` WHERE `virtuemart_currency_id`="' . $method->payment_currency . '" ';
 		$db = &JFactory::getDBO();
 		$db->setQuery($q);
+
 		$currency_code_3 = $db->loadResult();
 		$paymentCurrency = CurrencyDisplay::getInstance($method->payment_currency);
 		$totalInPaymentCurrency = round($paymentCurrency->convertCurrencyTo($method->payment_currency, $order['details']['BT']->order_total, false), 2);
 
 		$amount = $totalInPaymentCurrency * 100;
-		$returnURL = JROUTE::_(JURI::root() . 'index.php?option=com_virtuemart&view=icepayresponse&task=result&pm=' . $order['details']['BT']->virtuemart_paymentmethod_id);
+		$returnURL = JROUTE::_(JURI::root() . 'index.php?option=com_virtuemart&view=pluginresponse&task=pluginresponsereceived&pm=' . $order['details']['BT']->virtuemart_paymentmethod_id);
 
-		$icepay = $this->vm_icepay->basic();
+		$icepay = $this->_icepay->basic();
+		$icepay->setMerchantID($method->merchantid)->setSecretCode($method->secretcode);
 
-		try {
-			$icepay
-				->setMerchantID($method->merchantid)
-				->setSecretCode($method->secretcode);
+		$icepay
+			->setAmount($amount)
+			->setCountry(ShopFunctions::getCountryByID($order['details']['BT']->virtuemart_country_id, 'country_2_code'))
+			->setLanguage($this->_getLangISO())
+			->setCurrency($currency_code_3)
+			->setOrderID($cart->virtuemart_order_id)
+			->setReference($order['details']['BT']->order_number)
+			->setDescription($order['details']['BT']->order_number)
+			->setSuccessURL($returnURL)
+			->setErrorURL($returnURL);
 
-			$icepay
-				->setAmount($amount)
-				->setCountry(ShopFunctions::getCountryByID($order['details']['BT']->virtuemart_country_id, 'country_2_code'))
-				->setLanguage($this->_getLangISO())
-				->setCurrency($currency_code_3)
-				->setReference($order['details']['BT']->order_number)
-				->setDescription($order['details']['BT']->order_number)
-				->setSuccessURL($returnURL)
-                ->setErrorURL($returnURL);
-
-			$url = $icepay
-				->setOrderID($cart->virtuemart_order_id)
-				->getURL();
-		} catch (Exception $e) {
-			die($e->getMessage());
-		}
-
-		$html  = '<form action="' . $url . '" method="post" name="icepay"></form>';
-		$html .= '<script type="text/javascript">';
-		$html .= 'document.icepay.submit();';
-		$html .= '</script>';
+		$html = '<meta http-equiv="refresh" content="0; url=' . $icepay->getURL() . '" />';
 
 		$dbValues['order_number'] = $order['details']['BT']->order_number;
 		$dbValues['payment_name'] = $this->renderPluginName($method, $order);
@@ -193,6 +173,9 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 	}
 
 	function plgVmOnPaymentResponseReceived(&$html) {
+		if (!class_exists('VirtueMartModelOrders'))
+			require( JPATH_VM_ADMINISTRATOR . DS . 'models' . DS . 'orders.php' );
+
 		$jinput = JFactory::getApplication()->input;
 		$virtuemart_paymentmethod_id = $jinput->get('pm');
 
@@ -200,34 +183,58 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 			return null;
 		}
 
-		if (!$this->selectedThisElement($method->payment_element)) {
-			return false;
+		$icepay = $_SERVER['REQUEST_METHOD'] == 'POST' ? $this->_icepay->postback() : $this->_icepay->result();
+		$icepay->setMerchantID($method->merchantid)->setSecretCode($method->secretcode);
+
+		if ($_SERVER['REQUEST_METHOD'] != 'POST') {
+			if($icepay->validate()) {
+				switch ($icepay->getStatus()) {
+					case Icepay_StatusCode::OPEN:
+						break;
+					case Icepay_StatusCode::SUCCESS:
+						$order['order_status'] = $method->status_success;
+						$this->emptyCart();
+						break;
+					case Icepay_StatusCode::ERROR:
+						$order['order_status'] = $method->status_canceled;
+						return false;
+						break;
+				}	
+
+				$order['customer_notified'] = 1;
+				$order['comments'] = $icepay->getTransactionString();
+				$modelOrder->updateStatusForOneOrder($icepay->getOrderID(), $order, TRUE);
+			}
+		} else {
+			if($icepay->validate()) {
+				switch ($icepay->getStatus()) {
+					case Icepay_StatusCode::OPEN:
+						break;
+					case Icepay_StatusCode::SUCCESS:
+						$order['order_status'] = $method->status_success;
+						break;
+					case Icepay_StatusCode::ERROR:
+						$order['order_status'] = $method->status_canceled;
+						break;
+					case Icepay_StatusCode::REFUND:
+						$order['order_status'] = $method->status_refund;
+						break;
+					case Icepay_StatusCode::CHARGEBACK:
+						$order['order_status'] = $method->status_chargeback;
+						break;
+				}
+			}
+		
+			$modelOrder = VmModel::getModel('orders');
+
+			$order['virtuemart_order_id'] = $icepay->getOrderID();
+			$order['customer_notified'] = 1;
+			$order['comments'] = $icepay->getTransactionString();
+
+			$modelOrder->updateStatusForOneOrder($icepay->getOrderID(), $order, TRUE);
+
+			exit();
 		}
-
-		$icepay = $_SERVER['REQUEST_METHOD'] == 'POST' ? $this->vm_icepay->postback() : $this->vm_icepay->result();
-
-		try {
-            $icepay
-                ->setMerchantID($method->merchantid)
-                ->setSecretCode($method->secretcode);
-        } catch (Exception $e){
-            echo($e->getMessage());
-        }
-
-        if ($_SERVER['REQUEST_METHOD'] != 'POST') {
-        	if($icepay->validate()) {
-        		switch ($icepay->getStatus()) {
-        			case Icepay_StatusCode::OPEN:
-        				break;
-        			case Icepay_StatusCode::SUCCESS:
-        				break;
-        			case Icepay_StatusCode::ERROR:
-        				break;
-        		}
-        	}
-        } else {
-
-        }
 	}
 
 	function plgVmOnUserPaymentCancel() {
@@ -236,7 +243,7 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 
 	/**
 	 * Required functions by Joomla or VirtueMart. Removed code comments due to 'file length'.
-	 * All copyrights are (c) respective year of author or copyright holder, and the author.
+	 * All copyrights are (c) respective year of author or copyright holder, and/or the author.
 	 */
 	function getCosts(VirtueMartCart $cart, $method, $cart_prices) {
 		if (preg_match('/%$/', $method->cost_percent_total)) {
