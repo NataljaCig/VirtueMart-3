@@ -13,7 +13,7 @@ defined('_JEXEC') or die('Direct access to ' . basename(__FILE__) . ' is not all
 if (!class_exists('vmPSPlugin'))
 	require(JPATH_VM_PLUGINS . DS . 'vmpsplugin.php');
 
-require_once(dirname(__FILE__) . '/icepay_api/icepay_api_basic.php');
+require_once(dirname(__FILE__) . '/icepay/api/icepay_api_basic.php');
 
 class plgVmPaymentIcepay extends vmPSPlugin {
 
@@ -28,6 +28,7 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 		$this->_loggable = true;
 		$this->_tablepkey = 'id';
 		$this->_tableId = 'id';
+
 		$this->tableFields = array_keys($this->getTableSQLFields());
 
 		$varsToPush = array(
@@ -42,7 +43,6 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 			'status_refund'             => array('', 'char'),
 			'status_chargeback'         => array('', 'char'),
 
-			'payment_logos'             => array('', 'char'),
 			'payment_currency'          => array(0, 'int'),
 			'countries'                 => array(0, 'char'),
 			'min_amount'                => array(0, 'int'),
@@ -55,22 +55,22 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 		$this->setConfigParameterable($this->_configTableFieldName, $varsToPush);
 	}
 
-    private function icepay() {
-        if (!isset($this->_icepay))
-        	$this->_icepay = new Icepay_Project_Helper();
+	private function icepay() {
+		if (!isset($this->_icepay))
+			$this->_icepay = new Icepay_Project_Helper();
 
-        return $this->_icepay;
-    }
+		return $this->_icepay;
+	}
 
 	public function getVmPluginCreateTableSQL() {
 		return $this->createTableSQL('Payment ' . $_vendor . ' Table');
 	}
 
 	private function _getLangISO() {
-		$lang = &JFactory::getLanguage();
-		$arr = explode("-", $lang->get('tag'));
+		$language = JFactory::getLanguage();
+		$tag = strtolower(substr($language->get('tag'), 0, 2));
 
-		return strtoupper($arr[0]);
+		return $tag;
 	}
 
 	function getTableSQLFields() {
@@ -143,7 +143,13 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 			->setSuccessURL($returnURL)
 			->setErrorURL($returnURL);
 
-		$html = '<meta http-equiv="refresh" content="0; url=' . $icepay->getURL() . '" />';
+		$url = $icepay->getURL();
+
+		$html = '<p>Please wait, we are redirecting you to the payment screen... <a href="' . $url . '">Click here</a> if you do not get redirected.</p>';
+		$html .= '<form action="' . $url . '" method="post" name="icepay"></form>';
+		$html .= '<script type="text/javascript">';
+		$html .= 'document.icepay.submit();';
+		$html .= '</script>';
 
 		$dbValues['order_number'] = $order['details']['BT']->order_number;
 		$dbValues['payment_name'] = $this->renderPluginName($method, $order);
@@ -202,7 +208,6 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 				}	
 
 				$order['customer_notified'] = 1;
-				$order['comments'] = $icepay->getTransactionString();
 				$modelOrder->updateStatusForOneOrder($icepay->getOrderID(), $order, TRUE);
 			}
 		} else {

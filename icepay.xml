@@ -17,23 +17,25 @@
 
 	<files>
 		<!-- All other files will be handled by VirtueMart 3 -->
-		<folder>icepay_api</folder>
+		<folder>icepay</folder>
 		<filename plugin="icepay">icepay.php</filename>
 	</files>
 
 	<vmconfig>
 		<fields name="params">
-			<fieldset name="payment" addfieldpath="/administrator/components/com_virtuemart/fields">
+			<fieldset name="payment" addfieldpath="/plugins/vmpayment/icepay/icepay/fields">
 				<field type="vmtitle" description="" default="ICEPAY Configuration" />
-				<field type="text" name="merchantid" description="Your ICEPAY Merchant ID" default="" label="ICEPAY Merchant ID" size="50" />
-				<field type="text" name="secretcode" description="Your ICEPAY Secretcode" default="" label="ICEPAY Secretcode" size="50" />
-				<field type="note" name="postback_url" label="Postback URL" description="Read the payment module manual for the correct Postback URL." size="50" />
-				<field type="vmtitle" description="" default="Payment status" />
-                <field name="status_pending" type="vmorderstate" scope="com_virtuemart" default="P" label="Pending" />
-                <field name="status_success" type="vmorderstate" scope="com_virtuemart" default="C" label="Success" />
-                <field name="status_canceled" type="vmorderstate" scope="com_virtuemart" default="X" label="Cancel" />
-                <field name="status_refunded" type="vmorderstate" scope="com_virtuemart" default="R" label="Refund" />
-                <field name="status_chargeback" type="vmorderstate" scope="com_virtuemart" default="R" label="Chargeback" />
+				<field type="text" name="merchantid" description="Your ICEPAY Merchant ID" default="" label="ICEPAY Merchant ID" size="50" required="true" filter="integer" />
+				<field type="text" name="secretcode" description="Your ICEPAY Secretcode" default="" label="ICEPAY Secretcode" size="50" required="true" />
+				<field type="note" name="postback" level="level1" label="ICEPAY Postback URL" size="50" />
+				<field type="postbackurl" level="level1" />
+				<field type="vmtitle" description="" default="Payment statuses" />
+				<field type="note" name="paymentnote" label="" description="Leave these statuses as default if you do not know what your doing." size="50" />
+				<field name="status_pending" type="vmorderstate" scope="com_virtuemart" default="P" label="Pending" />
+				<field name="status_success" type="vmorderstate" scope="com_virtuemart" default="C" label="Success" />
+				<field name="status_canceled" type="vmorderstate" scope="com_virtuemart" default="X" label="Cancel" />
+				<field name="status_refunded" type="vmorderstate" scope="com_virtuemart" default="R" label="Refund" />
+				<field name="status_chargeback" type="vmorderstate" scope="com_virtuemart" default="R" label="Chargeback" />
 			</fieldset>
 		</fields>
 	</vmconfig>
