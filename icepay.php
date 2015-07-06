@@ -43,6 +43,7 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 			'status_refund'             => array('', 'char'),
 			'status_chargeback'         => array('', 'char'),
 
+			'payment_logos'             => array('', 'char'),
 			'payment_currency'          => array(0, 'int'),
 			'countries'                 => array(0, 'char'),
 			'min_amount'                => array(0, 'int'),
@@ -196,6 +197,7 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 			if($icepay->validate()) {
 				switch ($icepay->getStatus()) {
 					case Icepay_StatusCode::OPEN:
+						$order['order_status'] = $method->status_pending;
 						break;
 					case Icepay_StatusCode::SUCCESS:
 						$order['order_status'] = $method->status_success;
@@ -207,6 +209,7 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 						break;
 				}	
 
+				$modelOrder = VmModel::getModel('orders');
 				$order['customer_notified'] = 1;
 				$modelOrder->updateStatusForOneOrder($icepay->getOrderID(), $order, TRUE);
 			}
@@ -214,6 +217,7 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 			if($icepay->validate()) {
 				switch ($icepay->getStatus()) {
 					case Icepay_StatusCode::OPEN:
+						$order['order_status'] = $method->status_pending;
 						break;
 					case Icepay_StatusCode::SUCCESS:
 						$order['order_status'] = $method->status_success;
@@ -232,7 +236,6 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 		
 			$modelOrder = VmModel::getModel('orders');
 
-			$order['virtuemart_order_id'] = $icepay->getOrderID();
 			$order['customer_notified'] = 1;
 			$order['comments'] = $icepay->getTransactionString();
 
