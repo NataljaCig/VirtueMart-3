@@ -226,7 +226,7 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 						$order['order_status'] = $method->status_canceled;
 						break;
 					case Icepay_StatusCode::REFUND:
-						$order['order_status'] = $method->status_refund;
+						$order['order_status'] = $method->status_chargeback;
 						break;
 					case Icepay_StatusCode::CHARGEBACK:
 						$order['order_status'] = $method->status_chargeback;
