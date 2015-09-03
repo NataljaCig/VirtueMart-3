@@ -5,7 +5,7 @@
  * @author        Ricardo Jacobs <ricardo.jacobs@icepay.com>
  * @copyright     (c) 2015 ICEPAY. All rights reserved.
  * @version       1.0.0, July 2015
- * @license       GNU/GPL, see http://www.gnu.org/licenses/gpl-3.0.html
+ * @license       BSD-2-Clause, see LICENSE.md
  */
 
 defined('_JEXEC') or die('Direct access to ' . basename(__FILE__) . ' is not allowed.');
