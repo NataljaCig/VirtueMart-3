@@ -15,30 +15,37 @@
 		]]>
 	</description>
 
+	<languages>
+		<language tag="en-GB">language/en-GB.plg_vmpayment_icepay.ini</language>
+		<language tag="nl-NL">language/nl-NL.plg_vmpayment_icepay.ini</language>
+	</languages>
+
 	<files>
 		<!-- All other files will be handled by VirtueMart 3 -->
 		<folder>icepay</folder>
+		<folder>language</folder>
 		<filename plugin="icepay">icepay.php</filename>
 	</files>
 
 	<vmconfig>
 		<fields name="params">
 			<fieldset name="payment" addfieldpath="/plugins/vmpayment/icepay/icepay/fields">
-				<field type="vmtitle" description="" default="ICEPAY Configuration" />
-				<field type="text" name="merchantid" description="Your ICEPAY Merchant ID" default="" label="ICEPAY Merchant ID" size="50" required="true" filter="integer" />
-				<field type="text" name="secretcode" description="Your ICEPAY Secretcode" default="" label="ICEPAY Secretcode" size="50" required="true" />
-				<field type="note" name="postback" level="level1" label="ICEPAY Postback URL" size="50" />
+				<field type="vmtitle" description="" default="VMPAYMENT_ICEPAY_ICEPAY_CONF" />
+				<field type="text" name="merchantid" description="VMPAYMENT_ICEPAY_MERCHANT_ID_DESC" default="" label="VMPAYMENT_ICEPAY_MERCHANT_ID_LBL" size="50" required="true" filter="integer" />
+				<field type="text" name="secretcode" description="VMPAYMENT_ICEPAY_SECRET_CODE_DESC" default="" label="VMPAYMENT_ICEPAY_SECRET_CODE_LBL" size="50" required="true" />
+				<field type="note" name="postback" level="level1" label="VMPAYMENT_ICEPAY_POSTBACK_URL_LBL" size="50" />
 				<field type="postbackurl" level="level1" />
-				<field type="vmtitle" description="" default="Payment statuses" />
-				<field type="note" name="paymentnote" label="" description="Leave these statuses as default if you do not know what your doing." size="50" />
-				<field name="status_pending" type="vmorderstate" scope="com_virtuemart" default="P" label="Pending" />
-				<field name="status_success" type="vmorderstate" scope="com_virtuemart" default="C" label="Success" />
-				<field name="status_canceled" type="vmorderstate" scope="com_virtuemart" default="X" label="Cancel" />
-				<field name="status_refunded" type="vmorderstate" scope="com_virtuemart" default="R" label="Refund" />
-				<field name="status_chargeback" type="vmorderstate" scope="com_virtuemart" default="R" label="Chargeback" />
+				<field type="vmtitle" description="" default="VMPAYMENT_ICEPAY_PAYMENT_STATUSES_LBL" />
+				<field type="note" name="paymentnote" label="" description="VMPAYMENT_ICEPAY_PAYMENT_STATUSES_WARNING" size="50" />
+				<field name="status_pending" type="vmorderstate" scope="com_virtuemart" default="P" label="VMPAYMENT_ICEPAY_PAYMENT_STATUSES_PENDING" />
+				<field name="status_success" type="vmorderstate" scope="com_virtuemart" default="C" label="VMPAYMENT_ICEPAY_PAYMENT_STATUSES_SUCCESS" />
+				<field name="status_canceled" type="vmorderstate" scope="com_virtuemart" default="X" label="VMPAYMENT_ICEPAY_PAYMENT_STATUSES_CANCEL" />
+				<field name="status_refunded" type="vmorderstate" scope="com_virtuemart" default="R" label="VMPAYMENT_ICEPAY_PAYMENT_STATUSES_REFUND" />
+				<field name="status_chargeback" type="vmorderstate" scope="com_virtuemart" default="R" label="VMPAYMENT_ICEPAY_PAYMENT_STATUSES_CBACK" />
 			</fieldset>
 		</fields>
 	</vmconfig>
+
 	<updateservers>
 		<server type="extension" name="VirtueMart plg_vmpayment_icepay Update Site"><![CDATA[https://raw.githubusercontent.com/icepay/VirtueMart-3/master/version.xml]]></server>
 	</updateservers>
