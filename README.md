@@ -6,8 +6,6 @@ Make payments in your VirtueMart 3 webshop possible. Download the special Virtue
 
 The master branche may not be stable. See the [release list](https://github.com/icepay/VirtueMart-3/releases) for stable version of this module.
 
-**WARNING: This payment mpodule is compatible only with Joomla 3.x in combination with VirtueMart 3.x. Any lower version will not be supported or gets updated by ICEPAY**
-
 ## Contributing ##
 
 * Fork it
@@ -22,5 +20,6 @@ If you found a repeatable bug, and troubleshooting tips didn't help, then be sur
 
 ## Changelog ##
 
-### 1.0.0 - 30/06/2015
-* Dev - Initial public release for VirtueMart 3.
+Version | Release date | Changes
+------- | ------------ | -------
+1.0.0   | 30/06/2015   | Initial public release for VirtueMart 3.
