@@ -195,6 +195,8 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 
 		if ($_SERVER['REQUEST_METHOD'] != 'POST') {
 			if($icepay->validate()) {
+				$modelOrder = VmModel::getModel('orders');
+
 				switch ($icepay->getStatus()) {
 					case Icepay_StatusCode::OPEN:
 						$order['order_status'] = $method->status_pending;
@@ -209,38 +211,40 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 						break;
 				}	
 
-				$modelOrder = VmModel::getModel('orders');
-				$order['customer_notified'] = 1;
 				$modelOrder->updateStatusForOneOrder($icepay->getOrderID(), $order, TRUE);
 			}
 		} else {
 			if($icepay->validate()) {
+				$modelOrder = VmModel::getModel('orders');
+
 				switch ($icepay->getStatus()) {
 					case Icepay_StatusCode::OPEN:
 						$order['order_status'] = $method->status_pending;
+						$order['comments'] = $icepay->getTransactionString();
 						break;
 					case Icepay_StatusCode::SUCCESS:
 						$order['order_status'] = $method->status_success;
+						$order['customer_notified'] = 1;
+						$order['comments'] = $icepay->getTransactionString();
 						break;
 					case Icepay_StatusCode::ERROR:
 						$order['order_status'] = $method->status_canceled;
+						$order['comments'] = $icepay->getTransactionString();
 						break;
 					case Icepay_StatusCode::REFUND:
 						$order['order_status'] = $method->status_chargeback;
+						$order['customer_notified'] = 1;
+						$order['comments'] = $icepay->getTransactionString();
 						break;
 					case Icepay_StatusCode::CHARGEBACK:
 						$order['order_status'] = $method->status_chargeback;
+						$order['customer_notified'] = 1;
+						$order['comments'] = $icepay->getTransactionString();
 						break;
 				}
 			}
-		
-			$modelOrder = VmModel::getModel('orders');
-
-			$order['customer_notified'] = 1;
-			$order['comments'] = $icepay->getTransactionString();
 
 			$modelOrder->updateStatusForOneOrder($icepay->getOrderID(), $order, TRUE);
-
 			exit();
 		}
 	}
