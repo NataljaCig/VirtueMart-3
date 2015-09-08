@@ -4,7 +4,7 @@
  * @package       ICEPAY Payment Module for VirtueMart 3
  * @author        Ricardo Jacobs <ricardo.jacobs@icepay.com>
  * @copyright     (c) 2015 ICEPAY. All rights reserved.
- * @version       1.0.0, July 2015
+ * @version       1.0.1, July 2015
  * @license       BSD-2-Clause, see LICENSE.md
  */
 
@@ -322,5 +322,5 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 
 }
 
-// End of file (v 1.0.0)
+// End of file (v 1.0.1)
 // github.com/icepay/virtuemart-3
