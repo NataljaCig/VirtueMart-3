@@ -179,44 +179,53 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 		$paymentCurrencyId = $method->payment_currency;
 	}
 
-	function plgVmOnPaymentResponseReceived(&$html) {
+	function plgVmOnPaymentResponseReceived(&$html)
+	{
 		if (!class_exists('VirtueMartModelOrders'))
-			require( JPATH_VM_ADMINISTRATOR . DS . 'models' . DS . 'orders.php' );
+			require(JPATH_VM_ADMINISTRATOR . DS . 'models' . DS . 'orders.php');
 
 		$jinput = JFactory::getApplication()->input;
 		$virtuemart_paymentmethod_id = $jinput->get('pm');
 
 		if (!($method = $this->getVmPluginMethod($virtuemart_paymentmethod_id))) {
-			return null;
+			return;
 		}
 
 		$icepay = $_SERVER['REQUEST_METHOD'] == 'POST' ? $this->_icepay->postback() : $this->_icepay->result();
 		$icepay->setMerchantID($method->merchantid)->setSecretCode($method->secretcode);
+		$renderPage = true;
 
-		if ($_SERVER['REQUEST_METHOD'] != 'POST') {
-			if($icepay->validate()) {
-				$modelOrder = VmModel::getModel('orders');
 
+		if ($icepay->validate()) {
+
+			$virtuemart_order_id = $icepay->getOrderID();
+
+			$modelOrder = VmModel::getModel('orders');
+			$vmOrder = $modelOrder->getOrder($virtuemart_order_id);
+			
+			if ($_SERVER['REQUEST_METHOD'] != 'POST') {
+				//result
 				switch ($icepay->getStatus()) {
 					case Icepay_StatusCode::OPEN:
 						$order['order_status'] = $method->status_pending;
+						$order['comments'] = $this->getTransactionString($icepay->getResultData());
 						break;
 					case Icepay_StatusCode::SUCCESS:
 						$order['order_status'] = $method->status_success;
+						$order['customer_notified'] = 1;
+						$order['comments'] = $this->getTransactionString($icepay->getResultData());
 						$this->emptyCart();
 						break;
 					case Icepay_StatusCode::ERROR:
 						$order['order_status'] = $method->status_canceled;
-						return false;
+						$order['comments'] = $this->getTransactionString($icepay->getResultData());
+//						return false;
 						break;
-				}	
 
-				$modelOrder->updateStatusForOneOrder($icepay->getOrderID(), $order, TRUE);
-			}
-		} else {
-			if($icepay->validate()) {
-				$modelOrder = VmModel::getModel('orders');
-
+				}
+			} else {
+				//postback
+				$renderPage = false;
 				switch ($icepay->getStatus()) {
 					case Icepay_StatusCode::OPEN:
 						$order['order_status'] = $method->status_pending;
@@ -242,12 +251,38 @@ class plgVmPaymentIcepay extends vmPSPlugin {
 						$order['comments'] = $icepay->getTransactionString();
 						break;
 				}
+
 			}
 
-			$modelOrder->updateStatusForOneOrder($icepay->getOrderID(), $order, TRUE);
+			$vmOrderDetails = $vmOrder['details']['BT'];
+			if($vmOrderDetails->order_status !== $order['order_status'] || count($vmOrder['history']) <= 1)
+			{
+				$modelOrder->updateStatusForOneOrder($virtuemart_order_id, $order, TRUE);
+			}
+		}
+
+		//Do not render page for POSTBACK
+		if(!$renderPage) {
 			exit();
 		}
+
 	}
+
+
+	//TODO: move this function to ICEPAY PHP API
+	private function getTransactionString($icepayResultData){
+		return sprintf(
+			"Paymentmethod: %s \n| OrderID: %s \n| Status: %s \n| StatusCode: %s \n| PaymentID: %s \n| TransactionID: %s \n| Amount: %s",
+			isset($icepayResultData->paymentMethod)?$this->data->paymentMethod:"",
+			isset($icepayResultData->orderID)?$this->data->orderID:"",
+			isset($icepayResultData->status)?$this->data->status:"",
+			isset($icepayResultData->statusCode)?$this->data->statusCode:"",
+			isset($icepayResultData->paymentID)?$this->data->paymentID:"",
+			isset($icepayResultData->transactionID)?$this->data->transactionID:"",
+			isset($icepayResultData->amount)?$this->data->amount:""
+		);
+	}
+
 
 	function plgVmOnUserPaymentCancel() {
 		return true;
