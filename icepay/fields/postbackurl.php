@@ -3,8 +3,8 @@
 /**
  * @package       ICEPAY Payment Module for VirtueMart 3
  * @author        Ricardo Jacobs <ricardo.jacobs@icepay.com>
- * @copyright     (c) 2015 ICEPAY. All rights reserved.
- * @version       1.0.1, July 2015
+ * @copyright     (c) 2016 ICEPAY. All rights reserved.
+ * @version       1.0.2, July 2015
  * @license       GNU/GPL, see http://www.gnu.org/licenses/gpl-3.0.html
  */
 
@@ -34,5 +34,5 @@ class JFormFieldPostbackURL extends JFormField {
 
 }
 
-// End of file (v 1.0.1)
+// End of file (v 1.0.2)
 // github.com/icepay/virtuemart-3

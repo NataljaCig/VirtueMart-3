@@ -22,5 +22,6 @@ If you found a repeatable bug, and troubleshooting tips didn't help, then be sur
 
 Version | Release date | Changes
 ------- | ------------ | -------
+1.0.2   | 07/07/2016   | ECC-63 Bugfix: order confirmation email sent twice; Changed the way order statuses are processed.
 1.0.1   | 08/09/2015   | Customer notifications only send once.
 1.0.0   | 30/06/2015   | Initial public release for VirtueMart 3.
